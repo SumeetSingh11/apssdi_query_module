@@ -1,18 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './MapDock.css';
 import shp from 'shpjs';
 import {
     Layers, Database, Search, Wrench, Map as MapIcon,
     X, ChevronDown, ChevronRight, Check, Info, MoreVertical,
     Plus, Trash2, FilePlus, Settings, Scissors, Maximize,
-    Minimize, Activity, Zap, Image, Upload, FolderOpen, ArrowLeft
+    Minimize, Activity, Zap, Image, Upload, FolderOpen, ArrowLeft,
+    AlignLeft, AlignRight, Database as DbIcon, ArrowRightLeft, Split,
+    Expand, Shrink, Equal, BoxSelect, Sparkles, GitBranch, History
 } from 'lucide-react';
 
 // --- Shared Data ---
 const CATALOG_DATA = [
-    { id: 'ASI', label: 'ASI', count: 2 },
-    { id: 'Bichom', label: 'Bichom Dam', count: 5 },
-    { id: 'Agri', label: 'Agriculture/Horticulture', count: 8 },
     {
         id: 'Connectivity', label: 'Connectivity', count: 12, items: [
             { name: 'Border Road', count: 188 },
@@ -23,163 +22,91 @@ const CATALOG_DATA = [
             { name: 'Other village roads', count: 422 },
         ]
     },
-    { id: 'Forest', label: 'Forest & Environment', count: 6 },
+    { id: 'ASI', label: 'ASI Heritage Sites', count: 2, items: [{ name: 'Temple Ruins', count: 1 }, { name: 'Fort Wall', count: 1 }] },
+    { id: 'Agri', label: 'Agriculture & Horticulture', count: 8, items: [{ name: 'Active Cropland', count: 4 }, { name: 'Fruit Orchards', count: 4 }] },
+    { id: 'Forest', label: 'Forest & Environment', count: 6, items: [{ name: 'Reserve Forest', count: 3 }, { name: 'Wildlife Sanctuary', count: 3 }] },
 ];
 
 // --- Sub-Components ---
 
-// 1. Layers Panel Content
-const LayersContent = ({ onAddLayer, layers = [] }) => {
+// 1. Layers Panel Hub
+const LayersContent = ({ onAddLayer, layers = [], onEnterCatalog }) => {
     const fileInputRef = useRef(null);
-    const [view, setView] = useState('list'); // 'list' or 'catalog'
-    const [expandedGroup, setExpandedGroup] = useState(null);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         try {
-            // Check if zip
             if (file.name.endsWith('.zip')) {
                 const buffer = await file.arrayBuffer();
                 const geojson = await shp(buffer);
-
-                // shpjs might return an array if zip has multiple shp
                 const data = Array.isArray(geojson) ? geojson[0] : geojson;
-
                 onAddLayer({
                     data: data,
                     name: file.name.replace('.zip', ''),
-                    color: '#' + Math.floor(Math.random() * 16777215).toString(16) // Random color
+                    color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+                    source: 'Local Upload'
                 });
             } else {
-                alert("Please upload a .zip file containing the Shapefile (.shp, .dbf, .shx)");
+                alert("Please upload a .zip file");
             }
         } catch (err) {
-            console.error("Shapefile parse error:", err);
-            alert("Failed to parse shapefile. Ensure it is a valid zip archive.");
+            console.error("Parse error:", err);
         }
-
-        // Reset input
         e.target.value = null;
     };
 
-    const handleAddFromCatalog = (itemName) => {
-        onAddLayer({
-            data: null, // Placeholder for actual catalog data fetch
-            name: itemName,
-            color: '#' + Math.floor(Math.random() * 16777215).toString(16),
-            source: 'System Catalog'
-        });
-        setView('list');
-    };
-
-    if (view === 'catalog') {
-        return (
-            <div className="animate-fade-in">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <button
-                        onClick={() => setView('list')}
-                        style={{ padding: '8px', borderRadius: '50%', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
-                    >
-                        <ArrowLeft size={18} color="#64748b" />
-                    </button>
-                    <h3 style={{ fontWeight: 600, margin: 0 }}>Select from Catalog</h3>
-                </div>
-
-                <div className="catalog-content-mini">
-                    {CATALOG_DATA.map(group => (
-                        <div key={group.id} className="catalog-group">
-                            <div
-                                className="catalog-header"
-                                onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
-                            >
-                                <span>{group.label}</span>
-                                {expandedGroup === group.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                            </div>
-
-                            {expandedGroup === group.id && (
-                                <div className="catalog-list">
-                                    {group.items ? group.items.map((item, idx) => (
-                                        <div key={idx} className="catalog-item">
-                                            <span style={{ flex: 1, fontSize: '0.9rem' }}>{item.name}</span>
-                                            <button
-                                                className="btn-xs-primary"
-                                                onClick={() => handleAddFromCatalog(item.name)}
-                                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                                            >
-                                                Add
-                                            </button>
-                                        </div>
-                                    )) : (
-                                        <div style={{ padding: '8px 16px', color: '#94a3b8', fontSize: '0.85rem' }}>No items available</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="animate-fade-in">
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-                accept=".zip"
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} accept=".zip" />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <button className="tool-card" onClick={() => fileInputRef.current?.click()}>
-                    <div className="tool-icon" style={{ background: '#dbeafe', color: '#2563eb' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                <div className="tool-card" onClick={() => fileInputRef.current?.click()}>
+                    <div className="tool-icon" style={{ background: '#eff6ff', color: '#2563eb', width: '48px', height: '48px', borderRadius: '14px' }}>
                         <Upload size={22} />
                     </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Upload File</span>
-                </button>
-                <button className="tool-card" onClick={() => setView('catalog')}>
-                    <div className="tool-icon" style={{ background: '#f3e8ff', color: '#9333ea' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Upload Local</div>
+                </div>
+                <div className="tool-card" onClick={onEnterCatalog}>
+                    <div className="tool-icon" style={{ background: '#f5f3ff', color: '#7c3aed', width: '48px', height: '48px', borderRadius: '14px' }}>
                         <FolderOpen size={22} />
                     </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>From Catalog</span>
-                </button>
-                <button className="tool-card" style={{ gridColumn: 'span 2' }}>
-                    <div className="tool-icon" style={{ background: '#dcfce7', color: '#16a34a' }}>
-                        <FilePlus size={22} />
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Create New Map</span>
+                    <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>From Catalog</div>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Active Layer Stack ({layers.length + 3})
+                </div>
+                <button style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
+                    <Trash2 size={14} /> FLUSH ALL
                 </button>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontWeight: 600 }}>Active Layers ({3 + layers.length})</h3>
-                <button style={{ color: '#ef4444', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Trash2 size={14} /> Clear All
-                </button>
-            </div>
-
-            <div className="layer-list">
-                {/* Dynamically added layers */}
-                {layers.map((layer, i) => (
-                    <div key={layer.id} className="catalog-item" style={{ borderRadius: '8px', border: `1px solid ${layer.color}`, background: `${layer.color}10`, marginBottom: '8px' }}>
-                        <div className="checkbox-custom checked" style={{ background: layer.color, borderColor: layer.color }}><Check size={12} /></div>
-                        <span style={{ flex: 1, fontWeight: 500 }}>{layer.name}</span>
-                        {layer.source === 'System Catalog' && <span style={{ fontSize: '0.7rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', marginRight: '8px' }}>Catalog</span>}
-                        <Settings size={16} color="#94a3b8" />
-                        <MoreVertical size={16} color="#94a3b8" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {layers.map((layer) => (
+                    <div key={layer.id} className="catalog-item" style={{ borderRadius: '20px', background: 'white', border: `1.5px solid ${layer.color}20` }}>
+                        <div className="checkbox-custom checked" style={{ background: layer.color, borderColor: layer.color }}>
+                            <Check size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{layer.name}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Source: {layer.source || 'Local'}</div>
+                        </div>
+                        <Settings size={16} color="#cbd5e1" />
                     </div>
                 ))}
-
-                {/* Hardcoded Layers */}
-                {['Road Network', 'District Boundaries', 'River System'].map((layer, i) => (
-                    <div key={i} className="catalog-item" style={{ borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '8px' }}>
-                        <div className="checkbox-custom checked"><Check size={12} /></div>
-                        <span style={{ flex: 1, fontWeight: 500 }}>{layer}</span>
-                        <Settings size={16} color="#94a3b8" />
-                        <MoreVertical size={16} color="#94a3b8" />
+                {['Mizoram Boundary', 'Road Network v2', 'River Systems'].map((name, i) => (
+                    <div key={i} className="catalog-item" style={{ borderRadius: '20px', background: '#f8fafc', opacity: 0.8 }}>
+                        <div className="checkbox-custom checked" style={{ background: '#94a3b8', borderColor: '#94a3b8' }}>
+                            <Check size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#475569' }}>{name}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Base Foundation Layer</div>
+                        </div>
+                        <MoreVertical size={16} color="#cbd5e1" />
                     </div>
                 ))}
             </div>
@@ -187,42 +114,67 @@ const LayersContent = ({ onAddLayer, layers = [] }) => {
     );
 };
 
-// 2. Catalog Panel Content (Reference Design)
-const CatalogContent = () => {
-    const [expanded, setExpanded] = useState('Connectivity');
+// 2. Data Catalog Panel
+const CatalogContent = ({ onSelectItem, selectionMode, onBack }) => {
+    const [expandedGroup, setExpandedGroup] = useState('Connectivity');
 
     return (
-        <div className="catalog-content">
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                <select style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <option>Department Wise</option>
-                    <option>Theme Wise</option>
-                </select>
-                <select style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <option>Vector & Raster</option>
-                    <option>Vector Only</option>
-                    <option>Raster Only</option>
-                </select>
+        <div className="catalog-content animate-fade-in">
+            {onBack && (
+                <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, color: '#475569' }}>
+                    <ArrowLeft size={16} /> Back to Hub
+                </button>
+            )}
+
+            {selectionMode && (
+                <div className="selection-banner" style={{ marginBottom: '24px' }}>
+                    <div className="input-icon" style={{ background: '#2563eb', color: 'white', width: '44px', height: '44px', borderRadius: '14px' }}>
+                        <Info size={22} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b' }}>Selection Mode</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Select data for {selectionMode === 'target' ? 'Primary Target' : 'Secondary Join'}</div>
+                    </div>
+                </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                <div className="input-wrapper" style={{ padding: '4px 12px', borderRadius: '12px' }}>
+                    <select style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}>
+                        <option>Department Wise</option>
+                        <option>Theme Wise</option>
+                    </select>
+                </div>
+                <div className="input-wrapper" style={{ padding: '4px 12px', borderRadius: '12px' }}>
+                    <select style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}>
+                        <option>All Types</option>
+                        <option>Vector Only</option>
+                        <option>Raster Only</option>
+                    </select>
+                </div>
             </div>
 
             {CATALOG_DATA.map(group => (
-                <div key={group.id} className="catalog-group">
-                    <div
-                        className="catalog-header"
-                        onClick={() => setExpanded(expanded === group.id ? null : group.id)}
-                    >
-                        <span>{group.label}</span>
-                        {expanded === group.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <div key={group.id} className="catalog-group" style={{ marginBottom: '12px' }}>
+                    <div className="catalog-header" onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Database size={18} color="#3b82f6" />
+                            <span style={{ fontSize: '0.95rem' }}>{group.label}</span>
+                        </div>
+                        {expandedGroup === group.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </div>
-
-                    {expanded === group.id && group.items && (
+                    {expandedGroup === group.id && group.items && (
                         <div className="catalog-list">
                             {group.items.map((item, idx) => (
-                                <div key={idx} className="catalog-item">
-                                    <div className="checkbox-custom checked"><Check size={12} /></div>
-                                    <span style={{ flex: 1, fontSize: '0.9rem' }}>{item.name} <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>({item.count})</span></span>
-                                    <Info size={16} color="#64748b" style={{ cursor: 'pointer' }} />
-                                    <MoreVertical size={16} color="#64748b" style={{ cursor: 'pointer' }} />
+                                <div key={idx} className="catalog-item" onClick={() => onSelectItem && onSelectItem(item.name)}>
+                                    <div className={`checkbox-custom ${selectionMode ? '' : 'checked'}`}>
+                                        {selectionMode ? <Plus size={14} /> : <Check size={14} />}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>{item.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: SDI-{(Math.random() * 999).toFixed(0)} • {item.count} Layers</div>
+                                    </div>
+                                    <div className="tool-icon-sm" style={{ width: '32px', height: '32px' }}><MoreVertical size={14} /></div>
                                 </div>
                             ))}
                         </div>
@@ -233,240 +185,42 @@ const CatalogContent = () => {
     );
 };
 
-// 3. Geoprocessing Tools
+// 3. Geoprocessing Panel
 const GeoprocessingContent = () => {
     const [view, setView] = useState('main'); // main, vector, raster
 
     if (view === 'main') return (
-        <div>
-            <h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>Select Tool Category</h3>
+        <div className="animate-fade-in">
+            <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>
+                Processing Categories
+            </div>
             <div className="tools-grid">
                 <div className="tool-card" onClick={() => setView('vector')}>
-                    <div className="tool-icon"><Activity size={28} /></div>
-                    <h3>Vector Tools</h3>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Buffer, Clip, Merge, Simplify</p>
+                    <div className="tool-icon vector"><Activity size={32} /></div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Vector</div>
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Buffers, Clips, and Geometry fixes</p>
                 </div>
                 <div className="tool-card" onClick={() => setView('raster')}>
-                    <div className="tool-icon" style={{ background: '#fce7f3', color: '#db2777' }}><Image size={28} /></div>
-                    <h3>Raster Tools</h3>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Resample, Clip, Contour, Slope</p>
+                    <div className="tool-icon raster"><Image size={32} /></div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Raster</div>
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>NDVI, Slope, and Terrain analytics</p>
                 </div>
             </div>
         </div>
     );
 
     return (
-        <div>
-            <button onClick={() => setView('main')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, color: '#64748b' }}>
-                <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /> Back to Categories
+        <div className="animate-fade-in">
+            <button onClick={() => setView('main')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, color: '#475569' }}>
+                <ArrowLeft size={16} /> Hub
             </button>
-            <h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>{view === 'vector' ? 'Vector' : 'Raster'} Operations</h3>
             <div className="tools-grid">
-                {view === 'vector' ? (
-                    <>
-                        {['Buffer Analysis', 'Clip Vector', 'Centroid', 'Simplify Geometry', 'Merge Layers', 'Dissolve'].map(tool => (
-                            <div key={tool} className="tool-card" style={{ padding: '12px', gap: '8px' }}>
-                                <div className="tool-icon" style={{ width: '36px', height: '36px' }}><Zap size={18} /></div>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{tool}</span>
-                            </div>
-                        ))}
-                    </>
-                ) : (
-                    <>
-                        {['Clip Raster', 'Resample', 'Slope', 'Aspect', 'Hillshade', 'Contour'].map(tool => (
-                            <div key={tool} className="tool-card" style={{ padding: '12px', gap: '8px' }}>
-                                <div className="tool-icon" style={{ width: '36px', height: '36px', background: '#fce7f3', color: '#db2777' }}><Scissors size={18} /></div>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{tool}</span>
-                            </div>
-                        ))}
-                    </>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
-// 4. Query Tool Content
-// 4. Query Tool Content
-const QueryContent = ({ history, onAddQuery }) => {
-    // No modal state needed anymore
-    const [showAdvanced, setShowAdvanced] = useState(false); // Default to false to save space? User asked 'Show advanced options', implying hidden first? Actually user said "Hide advanced options" in previous prompt, but here says "add option show advanced options". I'll default to visible_initially=false or true based on context. Let's start with false (collapsed) to keep it clean.
-    const [queryName, setQueryName] = useState('');
-
-    const handleCreate = () => {
-        if (!queryName.trim()) return;
-
-        onAddQuery({
-            name: queryName,
-            date: 'Just now',
-            type: 'Spatial Join'
-        });
-        setQueryName('');
-    };
-
-    // Filter Icon Component
-    const FilterIcon = () => (
-        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-            <div style={{ position: 'relative' }}>
-                <div style={{
-                    width: '16px', height: '16px', borderRadius: '50%', background: '#ef4444', color: 'white',
-                    fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'absolute', top: -6, right: -6, zIndex: 2, border: '2px solid white'
-                }}>0</div>
-                <Search size={18} style={{ color: '#94a3b8' }} />
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="query-content animate-fade-in">
-            {/* Inline Form Section */}
-            <div className="query-form-section" style={{ marginBottom: '24px' }}>
-
-                <div className="form-group">
-                    <label>Name of result</label>
-                    <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Enter result name..."
-                        value={queryName}
-                        onChange={(e) => setQueryName(e.target.value)}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label>Select target dataset</label>
-                    <div style={{ position: 'relative' }}>
-                        <select className="form-select" style={{ paddingRight: '40px' }} defaultValue="">
-                            <option value="" disabled>Select target dataset</option>
-                            <option>District Boundaries</option>
-                            <option>Village Locations</option>
-                            <option>Parcel Data 2024</option>
-                        </select>
-                        <FilterIcon />
-                    </div>
-                </div>
-
-                <div className="form-group">
-                    <label>Select join dataset</label>
-                    <div style={{ position: 'relative' }}>
-                        <select className="form-select" style={{ paddingRight: '40px' }} defaultValue="">
-                            <option value="" disabled>Select join dataset</option>
-                            <option>Census Population 2011</option>
-                            <option>Hospital Facilities</option>
-                            <option>Property Assessments</option>
-                        </select>
-                        <FilterIcon />
-                    </div>
-                </div>
-
-                <div className="advanced-section" style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <div
-                        className="toggle-advanced"
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        style={{ marginBottom: showAdvanced ? '16px' : '0' }}
-                    >
-                        {showAdvanced ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        <span>{showAdvanced ? 'Hide advanced options' : 'Show advanced options'}</span>
-                    </div>
-
-                    {showAdvanced && (
-                        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div className="form-group-outline">
-                                <label>Join type</label>
-                                <select className="form-select">
-                                    <option>INNER JOIN</option>
-                                    <option>LEFT JOIN</option>
-                                    <option>RIGHT JOIN</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group-outline">
-                                <label>Join operation</label>
-                                <select className="form-select">
-                                    <option>JOIN_ONE_TO_ONE</option>
-                                    <option>JOIN_ONE_TO_MANY</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group-outline">
-                                <label>Matching option</label>
-                                <select className="form-select">
-                                    <option>Intersects</option>
-                                    <option>Contains</option>
-                                    <option>Within</option>
-                                    <option>Equals</option>
-                                </select>
-                            </div>
+                {(view === 'vector' ? ['Buffer', 'Clip', 'Centroid', 'Simplify', 'Merge', 'Dissolve'] : ['Clip', 'Resample', 'Slope', 'Aspect', 'Hillshade', 'Contour']).map(tool => (
+                    <div key={tool} className="tool-card" style={{ padding: '16px 8px', gap: '8px' }}>
+                        <div className={`tool-icon-sm ${view}`} style={{ width: '40px', height: '40px' }}>
+                            {view === 'vector' ? <Zap size={18} /> : <Scissors size={18} />}
                         </div>
-                    )}
-                </div>
-
-                <button
-                    className="btn-primary"
-                    onClick={handleCreate}
-                    disabled={!queryName}
-                    style={{ marginTop: '20px' }}
-                >
-                    Create Query
-                </button>
-            </div>
-
-            {/* History Section */}
-            <div className="query-history-section">
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Search size={16} /> Recent Queries
-                </h3>
-                <div className="query-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                    {history.map((item, i) => (
-                        <div key={i} className="query-list-item animate-fade-in">
-                            <div style={{ color: '#3b82f6', background: '#eff6ff', padding: '6px', borderRadius: '8px' }}>
-                                <Search size={14} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>{item.name}</div>
-                                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.date}</div>
-                            </div>
-                            <MoreVertical size={14} color="#94a3b8" style={{ cursor: 'pointer' }} />
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-// 5. My Maps Content
-const MyMapsContent = () => {
-    const savedMaps = [
-        { title: 'Project Alpha - Zone A', date: 'Oct 24, 2024', shared: true },
-        { title: 'Forest Cover Analysis', date: 'Sep 15, 2024', shared: false },
-        { title: 'Road Network Proposal', date: 'Aug 02, 2024', shared: true },
-    ];
-
-    return (
-        <div className="mymaps-content">
-            <button className="tool-card" style={{ width: '100%', marginBottom: '20px', flexDirection: 'row', justifyContent: 'center', gap: '12px', background: 'var(--primary-color)', color: 'white', border: 'none' }}>
-                <Plus size={20} color="white" />
-                <span style={{ fontSize: '1rem', fontWeight: 600 }}>Create New Map</span>
-            </button>
-
-            <h3 style={{ fontWeight: 600, marginBottom: '12px' }}>Saved Maps</h3>
-            <div className="saved-maps-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {savedMaps.map((map, i) => (
-                    <div key={i} className="tool-card" style={{ padding: '16px', alignItems: 'flex-start', flexDirection: 'row', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <MapIcon size={24} color="#64748b" />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{map.title}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
-                                Last edited: {map.date}
-                            </div>
-                        </div>
-                        <MoreVertical size={20} color="#94a3b8" style={{ cursor: 'pointer' }} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{tool}</span>
                     </div>
                 ))}
             </div>
@@ -474,31 +228,194 @@ const MyMapsContent = () => {
     );
 };
 
-const MapToolsPanel = ({ activeTab, onClose, onAddLayer, layers }) => {
-    // Lifted State for persistence
-    const [queryHistory, setQueryHistory] = useState([
-        { name: 'District Population > 50k', date: '2 mins ago' },
-        { name: 'Roads near Hospitals', date: '1 hour ago' },
-        { name: 'Flood Risk Areas', date: 'Yesterday' },
-        { name: 'Schools with Playground', date: '2 days ago' },
-    ]);
-    const [toast, setToast] = useState(null);
+// 4. Query Builder Components
+const IconSelector = ({ options, value, onChange, label }) => (
+    <div className="form-group">
+        <label>{label}</label>
+        <div className="icon-selector-grid">
+            {options.map((opt) => (
+                <div
+                    key={opt.value}
+                    className={`icon-selection-item ${value === opt.value ? 'selected' : ''}`}
+                    onClick={() => onChange(opt.value)}
+                >
+                    <div className="selection-icon-wrapper" style={{ width: '60px', height: '60px', borderRadius: '18px' }}>
+                        <opt.icon size={28} />
+                    </div>
+                    <span className="selection-label" style={{ fontSize: '0.75rem', marginTop: '4px' }}>{opt.label}</span>
+                </div>
+            ))}
+        </div>
+    </div>
+);
 
-    const handleAddQuery = (query) => {
-        setQueryHistory([query, ...queryHistory]);
-        setToast(`Query "${query.name}" created successfully!`);
-        setTimeout(() => setToast(null), 3000);
+const QueryContent = ({
+    targetDataset,
+    joinDataset,
+    onEnterSelectionMode,
+    queryName,
+    setQueryName,
+    showAdvanced,
+    setShowAdvanced,
+    joinType,
+    setJoinType,
+    joinOp,
+    setJoinOp,
+    matchOption,
+    setMatchOption,
+    onCreateQuery,
+    history
+}) => {
+    const joinTypeOptions = [
+        { value: 'INNER JOIN', label: 'Inner Join', icon: DbIcon },
+        { value: 'LEFT JOIN', label: 'Left Join', icon: AlignLeft },
+        { value: 'RIGHT JOIN', label: 'Right Join', icon: AlignRight },
+    ];
+    const joinOpOptions = [
+        { value: 'JOIN_ONE_TO_ONE', label: '1 to 1', icon: ArrowRightLeft },
+        { value: 'JOIN_ONE_TO_MANY', label: '1 to Many', icon: Split },
+    ];
+    const matchOptions = [
+        { value: 'Intersects', label: 'Intersects', icon: Layers },
+        { value: 'Contains', label: 'Contains', icon: BoxSelect },
+        { value: 'Within', label: 'Within', icon: Shrink },
+        { value: 'Equals', label: 'Equals', icon: Equal },
+        { value: 'Touches', label: 'Touches', icon: Zap },
+        { value: 'Overlaps', label: 'Overlaps', icon: Sparkles },
+        { value: 'Crosses', label: 'Crosses', icon: GitBranch },
+    ];
+
+    return (
+        <div className="query-content animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="query-form-group">
+                <div className="form-group">
+                    <label><BoxSelect size={16} color="#3b82f6" /> Final Output Name</label>
+                    <div className="input-wrapper">
+                        <div className="input-icon"><Settings size={20} /></div>
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g., Analysis_Output_01"
+                            value={queryName}
+                            onChange={(e) => setQueryName(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label><Database size={16} color="#3b82f6" /> Target Dataset</label>
+                    <button className={`input-wrapper ${targetDataset ? 'selected' : ''}`} onClick={() => onEnterSelectionMode('target')} style={{ width: '100%', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                        <div className="input-icon" style={{ background: targetDataset ? '#2563eb' : '', color: targetDataset ? 'white' : '' }}><BoxSelect size={20} /></div>
+                        <div style={{ flex: 1, padding: '0 16px', fontSize: '0.95rem', fontWeight: 700, color: targetDataset ? '#0f172a' : '#cbd5e1', textAlign: 'left' }}>
+                            {targetDataset || 'Search Data Catalog...'}
+                        </div>
+                        <ChevronRight size={18} color="#cbd5e1" style={{ marginRight: '12px' }} />
+                    </button>
+                </div>
+
+                <div className="form-group">
+                    <label><GitBranch size={16} color="#3b82f6" /> Secondary Join Dataset</label>
+                    <button className={`input-wrapper ${joinDataset ? 'selected' : ''}`} onClick={() => onEnterSelectionMode('join')} style={{ width: '100%', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                        <div className="input-icon" style={{ background: joinDataset ? '#2563eb' : '', color: joinDataset ? 'white' : '' }}><Layers size={20} /></div>
+                        <div style={{ flex: 1, padding: '0 16px', fontSize: '0.95rem', fontWeight: 700, color: joinDataset ? '#0f172a' : '#cbd5e1', textAlign: 'left' }}>
+                            {joinDataset || 'Select relationship source...'}
+                        </div>
+                        <ChevronRight size={18} color="#cbd5e1" style={{ marginRight: '12px' }} />
+                    </button>
+                </div>
+
+                <div className="advanced-section" style={{ padding: showAdvanced ? '24px' : '16px', borderRadius: '24px' }}>
+                    <div className="toggle-advanced" onClick={() => setShowAdvanced(!showAdvanced)} style={{ width: '100%', justifyContent: 'space-between', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Settings size={16} className={showAdvanced ? 'animate-spin-slow' : ''} />
+                            {showAdvanced ? 'Engine Configuration' : 'Advanced Engine Options'}
+                        </span>
+                        {showAdvanced ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                    </div>
+                    {showAdvanced && (
+                        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
+                            <IconSelector label={<><ArrowRightLeft size={16} color="#3b82f6" /> Join Relationship</>} options={joinTypeOptions} value={joinType} onChange={setJoinType} />
+                            <IconSelector label={<><Split size={16} color="#3b82f6" /> Operation Cardinality</>} options={joinOpOptions} value={joinOp} onChange={setJoinOp} />
+                            <IconSelector label={<><BoxSelect size={16} color="#3b82f6" /> Spatial Matching Rule</>} options={matchOptions} value={matchOption} onChange={setMatchOption} />
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    className={`btn-run-engine ${(!queryName || !targetDataset || !joinDataset) ? '' : 'animate-pulse-subtle'}`}
+                    onClick={onCreateQuery}
+                    disabled={!queryName || !targetDataset || !joinDataset}
+                    style={{ marginTop: '24px' }}
+                >
+                    <Sparkles size={20} /> Run High-Speed Processing
+                </button>
+            </div>
+
+            {/* --- Query History Down Section --- */}
+            {history && history.length > 0 && (
+                <div className="query-history-section animate-fade-in" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <History size={16} /> Recent Query Execution
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {history.map((q, idx) => (
+                            <div key={idx} className="catalog-item" style={{ borderRadius: '20px', background: '#f8fafc', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div className="tool-icon-sm" style={{ background: '#dcfce7', color: '#059669', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
+                                    <Check size={18} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b' }}>{q.name}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{q.rule} • {q.target} + {q.join}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>{q.time}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 800 }}>READY</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- MAIN PANEL COMPONENT ---
+const MapToolsPanel = ({ activeTab, setActiveTab, onClose, onAddLayer, layers, position = 'left' }) => {
+    const [queryName, setQueryName] = useState('');
+    const [targetDataset, setTargetDataset] = useState(null);
+    const [joinDataset, setJoinDataset] = useState(null);
+    const [selectionMode, setSelectionMode] = useState(null); // 'target' | 'join' | null
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [joinType, setJoinType] = useState('INNER JOIN');
+    const [joinOp, setJoinOp] = useState('JOIN_ONE_TO_ONE');
+    const [matchOption, setMatchOption] = useState('Intersects');
+    const [queryHistory, setQueryHistory] = useState([
+        { name: 'Road_Buffer_Result_01', rule: 'Intersects', target: 'Mizoram Highway', join: 'District_Admin', time: '5m ago' }
+    ]);
+
+    const handleEnterSelectionMode = (mode) => {
+        setSelectionMode(mode);
+        setActiveTab('catalog');
     };
 
-    const getContent = () => {
-        switch (activeTab) {
-            case 'layers': return <LayersContent onAddLayer={onAddLayer} layers={layers} />;
-            case 'catalog': return <CatalogContent />;
-            case 'geoprocessing': return <GeoprocessingContent />;
-            case 'query': return <QueryContent history={queryHistory} onAddQuery={handleAddQuery} />;
-            case 'mymaps': return <MyMapsContent />;
-            default: return <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Select a tool to view options</div>;
-        }
+    const handleSelectItemFromCatalog = (itemName) => {
+        if (selectionMode === 'target') setTargetDataset(itemName);
+        else if (selectionMode === 'join') setJoinDataset(itemName);
+        setSelectionMode(null);
+        setActiveTab('query');
+    };
+
+    const handleCreateQuery = () => {
+        const newQuery = {
+            name: queryName,
+            rule: matchOption,
+            target: targetDataset,
+            join: joinDataset,
+            time: 'Just now'
+        };
+        setQueryHistory([newQuery, ...queryHistory]);
+        setQueryName('');
     };
 
     const getTitle = () => {
@@ -507,53 +424,57 @@ const MapToolsPanel = ({ activeTab, onClose, onAddLayer, layers }) => {
             case 'catalog': return 'Data Catalog';
             case 'geoprocessing': return 'Geoprocessing Tools';
             case 'query': return 'Query Builder';
-            case 'mymaps': return 'My Saved Maps';
-            default: return 'Tools';
+            default: return 'Tools Hub';
+        }
+    };
+
+    const getContent = () => {
+        switch (activeTab) {
+            case 'layers': return <LayersContent onAddLayer={onAddLayer} layers={layers} onEnterCatalog={() => setActiveTab('catalog')} />;
+            case 'catalog': return <CatalogContent onSelectItem={handleSelectItemFromCatalog} selectionMode={selectionMode} onBack={selectionMode ? () => setActiveTab('query') : null} />;
+            case 'geoprocessing': return <GeoprocessingContent />;
+            case 'query': return (
+                <QueryContent
+                    targetDataset={targetDataset}
+                    joinDataset={joinDataset}
+                    onEnterSelectionMode={handleEnterSelectionMode}
+                    queryName={queryName}
+                    setQueryName={setQueryName}
+                    showAdvanced={showAdvanced}
+                    setShowAdvanced={setShowAdvanced}
+                    joinType={joinType}
+                    setJoinType={setJoinType}
+                    joinOp={joinOp}
+                    setJoinOp={setJoinOp}
+                    matchOption={matchOption}
+                    setMatchOption={setMatchOption}
+                    onCreateQuery={handleCreateQuery}
+                    history={queryHistory}
+                />
+            );
+            default: return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Select a tool to begin</div>;
         }
     };
 
     if (!activeTab) return null;
 
     return (
-        <div className="tools-panel">
+        <div className={`tools-panel ${position}`}>
             <div className="panel-header">
                 <div className="panel-title">
-                    {activeTab === 'layers' && <Layers size={20} />}
-                    {activeTab === 'catalog' && <Database size={20} />}
-                    {activeTab === 'geoprocessing' && <Wrench size={20} />}
-                    {activeTab === 'query' && <Search size={20} />}
-                    {activeTab === 'mymaps' && <MapIcon size={20} />}
+                    {activeTab === 'layers' && <Layers size={22} color="#3b82f6" />}
+                    {activeTab === 'catalog' && <Database size={22} color="#8b5cf6" />}
+                    {activeTab === 'geoprocessing' && <Wrench size={22} color="#10b981" />}
+                    {activeTab === 'query' && <Search size={22} color="#2563eb" />}
                     {getTitle()}
                 </div>
-                <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <X size={20} color="#64748b" />
+                <button onClick={onClose} className="panel-close-btn">
+                    <X size={20} />
                 </button>
             </div>
             <div className="panel-content">
                 {getContent()}
             </div>
-
-            {/* Simple Toast Notification */}
-            {toast && (
-                <div className="animate-fade-in" style={{
-                    position: 'absolute',
-                    bottom: '20px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: '#10b981',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '50px',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    zIndex: 2000,
-                    whiteSpace: 'nowrap'
-                }}>
-                    <Check size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
-                    {toast}
-                </div>
-            )}
         </div>
     );
 };

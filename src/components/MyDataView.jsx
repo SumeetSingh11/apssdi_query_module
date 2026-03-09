@@ -1,54 +1,73 @@
 import React from 'react';
-import { Search, Edit, Download, Trash2 } from 'lucide-react';
+import { Search, Edit, Download, Trash2, Clock, Box, Play, CheckCircle2 } from 'lucide-react';
 
 const MyDataView = () => (
-    <div className="p-6 fade-in" style={{ padding: '2.5rem', height: '100%', overflowY: 'auto', background: '#f8fafc' }}>
-        <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)', marginBottom: '2rem' }}>All My Result</h2>
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-                <div style={{ position: 'relative', width: '300px' }}>
-                    <input type="text" placeholder="Search" style={{ width: '100%', padding: '10px 16px', borderRadius: '99px', border: '1px solid var(--border-color)', outline: 'none', background: '#f8fafc' }} />
-                    <Search size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+    <div className="p-8 animate-fade-in" style={{ padding: '3rem', height: '100%', overflowY: 'auto', background: '#f8fafc' }}>
+        <div style={{ marginBottom: '3rem' }}>
+            <div style={{ color: '#059669', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Processing History</div>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>Engineered Results</h2>
+        </div>
+
+        <div className="tool-card" style={{ padding: '32px', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div className="input-wrapper" style={{ width: '380px', borderRadius: '16px', padding: '10px 20px', background: '#f8fafc' }}>
+                    <Search size={18} color="#94a3b8" />
+                    <input type="text" placeholder="Filter your results..." style={{ border: 'none', background: 'transparent', outline: 'none', marginLeft: '12px', fontSize: '1rem', width: '100%' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', color: '#64748b', fontWeight: 700, cursor: 'pointer' }}>
+                        <Clock size={16} /> Latest First
+                    </button>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
+                        <Download size={16} /> Batch Export
+                    </button>
                 </div>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead style={{ background: '#f1f5f9', color: 'var(--text-secondary)' }}>
-                    <tr>
-                        <th style={{ padding: '1rem', textAlign: 'left', borderRadius: '8px 0 0 8px' }}>Name</th>
-                        <th style={{ padding: '1rem', textAlign: 'center' }}>Type</th>
-                        <th style={{ padding: '1rem', textAlign: 'left' }}>Created at</th>
-                        <th style={{ padding: '1rem', textAlign: 'right', borderRadius: '0 8px 8px 0' }}>Action</th>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 12px' }}>
+                <thead>
+                    <tr style={{ textAlign: 'left' }}>
+                        <th style={{ padding: '0 24px', color: '#64748b', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Analysis Output</th>
+                        <th style={{ padding: '0 24px', color: '#64748b', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Engine Type</th>
+                        <th style={{ padding: '0 24px', color: '#64748b', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Timestamp</th>
+                        <th style={{ padding: '0 24px', color: '#64748b', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Status</th>
+                        <th style={{ padding: '0 24px', color: '#64748b', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'right' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {[
-                        { name: 'test_image_resampling', type: 'raster', date: '2025-11-14 9:12' },
-                        { name: 'test.img', type: 'raster', date: '2025-11-14 9:41' },
-                        { name: 'test_cent_div', type: 'vector', date: '2025-11-14 9:09' },
-                        { name: 'test_buffer', type: 'vector', date: '2025-11-13 16:03' },
+                        { name: 'Pop_Density_Join_2024', type: 'Spatial Join', date: 'Just Now', status: 'Completed', color: '#3b82f6' },
+                        { name: 'Mizoram_Flood_Clip', type: 'Raster Clip', date: '2 hours ago', status: 'Completed', color: '#10b981' },
+                        { name: 'Road_Buffer_Analysis', type: 'Vector Buffer', date: 'Dec 14, 2024', status: 'In Progress', color: '#f59e0b' },
+                        { name: 'District_Centroids_Final', type: 'Centroid Gen', date: 'Dec 12, 2024', status: 'Completed', color: '#8b5cf6' },
                     ].map((row, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '1.25rem 1rem', fontWeight: 500, color: 'var(--text-primary)' }}>{row.name}</td>
-                            <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
-                                <span style={{
-                                    background: row.type === 'vector' ? '#22c55e' : '#334155',
-                                    color: 'white',
-                                    padding: '4px 12px',
-                                    borderRadius: '99px',
-                                    fontSize: '0.75rem',
-                                    textTransform: 'uppercase',
-                                    fontWeight: 600
-                                }}>
+                        <tr key={i} className="catalog-item" style={{ background: '#ffffff', borderRadius: '18px', border: '1px solid #f1f5f9', cursor: 'default' }}>
+                            <td style={{ padding: '20px 24px', borderRadius: '18px 0 0 18px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{ width: '40px', height: '40px', background: `${row.color}15`, color: row.color, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Box size={20} />
+                                    </div>
+                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{row.name}</span>
+                                </div>
+                            </td>
+                            <td style={{ padding: '20px 24px' }}>
+                                <span style={{ padding: '6px 12px', background: '#f1f5f9', color: '#475569', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
                                     {row.type}
                                 </span>
                             </td>
-                            <td style={{ padding: '1.25rem 1rem', color: 'var(--text-secondary)' }}>{row.date}</td>
-                            <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
-                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                                    <Edit size={18} className="text-gray-400 hover:text-blue-600 cursor-pointer" />
-                                    <Download size={18} className="text-gray-400 hover:text-green-600 cursor-pointer" />
-                                    <Trash2 size={18} className="text-gray-400 hover:text-red-600 cursor-pointer" />
+                            <td style={{ padding: '20px 24px', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>{row.date}</td>
+                            <td style={{ padding: '20px 24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: row.status === 'Completed' ? '#059669' : '#f59e0b', fontSize: '0.85rem', fontWeight: 700 }}>
+                                    {row.status === 'Completed' ? <CheckCircle2 size={16} /> : <Play size={16} />}
+                                    {row.status}
+                                </div>
+                            </td>
+                            <td style={{ padding: '20px 24px', borderRadius: '0 18px 18px 0', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                    <button style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', border: 'none', cursor: 'pointer' }}><Edit size={18} /></button>
+                                    <button style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ecfdf5', color: '#059669', border: 'none', cursor: 'pointer' }}><Download size={18} /></button>
+                                    <button style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                 </div>
                             </td>
                         </tr>

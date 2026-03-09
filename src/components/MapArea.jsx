@@ -183,13 +183,27 @@ const MapArea = () => {
                 {/* Tool Widgets */}
                 {activeTool === 'measure' && <MeasureWidget onClose={() => setActiveTool(null)} />}
 
+                {/* Selection Mode / Catalog Overlay */}
+                {activeTab === 'catalog' && (
+                    <div
+                        style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+                            zIndex: 850, animation: 'fadeIn 0.3s ease-out'
+                        }}
+                        onClick={() => setActiveTab(null)}
+                    />
+                )}
+
                 {/* Universal Map Tools Panel */}
                 {activeTab && (
                     <MapToolsPanel
                         activeTab={activeTab}
+                        setActiveTab={setActiveTab}
                         onClose={() => setActiveTab(null)}
                         onAddLayer={handleAddLayer}
                         layers={layers}
+                        position={activeTab === 'catalog' ? 'right' : 'left'}
                     />
                 )}
 

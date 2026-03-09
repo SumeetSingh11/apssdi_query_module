@@ -4,39 +4,43 @@ import { MoreHorizontal, Clock } from 'lucide-react';
 const PlusIcon = ({ color }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color || "currentColor"} strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 
 const TasksView = () => (
-    <div className="p-6 fade-in" style={{ padding: '2.5rem', height: '100%', overflowY: 'auto', background: '#f8fafc' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>My Tasks</h2>
-            <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--primary-color)', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+    <div className="app-main-bg">
+        <div className="tasks-header">
+            <h2 className="page-title" style={{ margin: 0 }}>My Tasks</h2>
+            <button className="action-btn">
                 <PlusIcon color="white" /> New Task
             </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        <div className="tasks-grid">
             {[
-                { title: 'Update Metadata for Roads', priority: 'High', status: 'In Progress', due: 'Today', color: '#f59e0b' },
-                { title: 'Review Digitization Quality', priority: 'Medium', status: 'Pending', due: 'Tomorrow', color: '#3b82f6' },
-                { title: 'Prepare Weekly Report', priority: 'Low', status: 'Completed', due: 'Yesterday', color: '#10b981' },
-                { title: 'Check Server Logs', priority: 'High', status: 'Pending', due: 'Dec 20', color: '#ef4444' },
-                { title: 'Update User Permissions', priority: 'Medium', status: 'In Progress', due: 'Dec 22', color: '#6366f1' }
+                { title: 'Update Metadata for Roads', priority: 'High', status: 'In Progress', due: 'Today', color: '#f59e0b', gradient: 'linear-gradient(135deg, #fef3c7, #fde68a)' },
+                { title: 'Review Digitization Quality', priority: 'Medium', status: 'Pending', due: 'Tomorrow', color: '#3b82f6', gradient: 'linear-gradient(135deg, #dbeafe, #bfdbfe)' },
+                { title: 'Prepare Weekly Report', priority: 'Low', status: 'Completed', due: 'Yesterday', color: '#10b981', gradient: 'linear-gradient(135deg, #d1fae5, #a7f3d0)' },
+                { title: 'Check Server Logs', priority: 'High', status: 'Pending', due: 'Dec 20', color: '#ef4444', gradient: 'linear-gradient(135deg, #fee2e2, #fecaca)' },
+                { title: 'Update User Permissions', priority: 'Medium', status: 'In Progress', due: 'Dec 22', color: '#6366f1', gradient: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)' }
             ].map((task, i) => (
-                <div key={i} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '99px', background: `${task.color}15`, color: task.color }}>
+                <div key={i} className="modern-card" style={{ padding: '1.5rem', minHeight: 'auto' }}>
+                    <div className="task-card-header">
+                        <span className="theme-badge task-priority-badge" style={{
+                            background: task.gradient,
+                            color: task.color,
+                            border: `1px solid ${task.color}30` // 30% alpha
+                        }}>
                             {task.priority.toUpperCase()} PRIORITY
                         </span>
-                        <MoreHorizontal size={18} color="#94a3b8" />
+                        <MoreHorizontal size={18} color="#94a3b8" style={{ cursor: 'pointer' }} />
                     </div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{task.title}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    <h3 className="task-title">{task.title}</h3>
+                    <div className="task-meta">
                         <Clock size={14} /> Due: {task.due}
                     </div>
-                    <div style={{ paddingTop: '1rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '-8px' }}>
-                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#cbd5e1', border: '2px solid white' }}></div>
-                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#94a3b8', border: '2px solid white', marginLeft: '-8px' }}></div>
+                    <div className="task-footer">
+                        <div className="avatar-group">
+                            <div className="avatar" style={{ background: '#cbd5e1' }}></div>
+                            <div className="avatar" style={{ background: '#94a3b8', marginLeft: '-10px' }}></div>
                         </div>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 500, color: task.status === 'Completed' ? '#10b981' : '#64748b' }}>
+                        <span className="task-status" style={{ color: task.status === 'Completed' ? '#10b981' : '#64748b' }}>
                             {task.status}
                         </span>
                     </div>
