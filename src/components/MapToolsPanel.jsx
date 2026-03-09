@@ -7,7 +7,8 @@ import {
     Plus, Trash2, FilePlus, Settings, Scissors, Maximize,
     Minimize, Activity, Zap, Image, Upload, FolderOpen, ArrowLeft,
     AlignLeft, AlignRight, Database as DbIcon, ArrowRightLeft, Split,
-    Expand, Shrink, Equal, BoxSelect, Sparkles, GitBranch, History
+    Expand, Shrink, Equal, BoxSelect, Sparkles, GitBranch, History,
+    Ruler, Target, Palette, Type, Grid3X3, MousePointer2, Gauge, FileDigit
 } from 'lucide-react';
 
 // --- Shared Data ---
@@ -185,9 +186,35 @@ const CatalogContent = ({ onSelectItem, selectionMode, onBack }) => {
     );
 };
 
-// 3. Geoprocessing Panel
+// 3. Geoprocessing Panel Hub & Forms
 const GeoprocessingContent = () => {
     const [view, setView] = useState('main'); // main, vector, raster
+    const [activeTool, setActiveTool] = useState(null);
+
+    // Form states
+    const [outputName, setOutputName] = useState('');
+    const [inputDataset, setInputDataset] = useState('');
+    const [maskDataset, setMaskDataset] = useState('');
+    const [distance, setDistance] = useState('100');
+    const [tolerance, setTolerance] = useState('100');
+    const [level, setLevel] = useState('2');
+    const [resolution, setResolution] = useState('');
+    const [quadsegs, setQuadsegs] = useState('');
+    const [capsStyle, setCapsStyle] = useState('round');
+    const [joinStyle, setJoinStyle] = useState('round');
+    const [mitreLimit, setMitreLimit] = useState('5');
+
+    const resetForm = () => {
+        setOutputName('');
+        setInputDataset('');
+        setMaskDataset('');
+    };
+
+    const handleToolSelect = (tool) => {
+        setActiveTool(tool);
+        setView('form');
+        resetForm();
+    };
 
     if (view === 'main') return (
         <div className="animate-fade-in">
@@ -197,32 +224,177 @@ const GeoprocessingContent = () => {
             <div className="tools-grid">
                 <div className="tool-card" onClick={() => setView('vector')}>
                     <div className="tool-icon vector"><Activity size={32} /></div>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Vector</div>
-                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Buffers, Clips, and Geometry fixes</p>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Vector Tools</div>
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Geometry fixes, Buffers, and Spatial intersections</p>
                 </div>
                 <div className="tool-card" onClick={() => setView('raster')}>
                     <div className="tool-icon raster"><Image size={32} /></div>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Raster</div>
-                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>NDVI, Slope, and Terrain analytics</p>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Raster Tools</div>
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Resampling, Cropping, and Terrain analytics</p>
                 </div>
             </div>
         </div>
     );
 
-    return (
+    if (view === 'vector' || view === 'raster') return (
         <div className="animate-fade-in">
             <button onClick={() => setView('main')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, color: '#475569' }}>
                 <ArrowLeft size={16} /> Hub
             </button>
             <div className="tools-grid">
-                {(view === 'vector' ? ['Buffer', 'Clip', 'Centroid', 'Simplify', 'Merge', 'Dissolve'] : ['Clip', 'Resample', 'Slope', 'Aspect', 'Hillshade', 'Contour']).map(tool => (
-                    <div key={tool} className="tool-card" style={{ padding: '16px 8px', gap: '8px' }}>
+                {(view === 'vector' ? ['Buffer', 'Centroid', 'Clip vector', 'Simplify'] : ['Clip raster', 'Image resampling']).map(tool => (
+                    <div key={tool} className="tool-card" style={{ padding: '16px 8px', gap: '8px' }} onClick={() => handleToolSelect(tool)}>
                         <div className={`tool-icon-sm ${view}`} style={{ width: '40px', height: '40px' }}>
                             {view === 'vector' ? <Zap size={18} /> : <Scissors size={18} />}
                         </div>
                         <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{tool}</span>
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+
+    // Dynamic Tool Forms
+    return (
+        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <button onClick={() => setView(activeTool.includes('raster') ? 'raster' : 'vector')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, color: '#475569', width: 'fit-content' }}>
+                <ArrowLeft size={16} /> Back to Tools
+            </button>
+
+            <div style={{ paddingBottom: '20px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>
+                    Engineered Operation
+                </div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{activeTool}</h3>
+            </div>
+
+            <div className="query-form-group">
+                {/* 1. Name Output */}
+                <div className="form-group">
+                    <label><Type size={16} color="#3b82f6" /> Name of output</label>
+                    <div className="input-wrapper">
+                        <div className="input-icon"><FileDigit size={20} /></div>
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Required field..."
+                            value={outputName}
+                            onChange={(e) => setOutputName(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* 2. Select Input (Vector or Raster) */}
+                <div className="form-group">
+                    <label>
+                        {activeTool.includes('raster') ? <Grid3X3 size={16} color="#3b82f6" /> : <Layers size={16} color="#3b82f6" />}
+                        {activeTool.includes('raster') ? ' Select Raster Dataset' : ' Select Vector'}
+                    </label>
+                    <button className={`input-wrapper ${inputDataset ? 'selected' : ''}`} style={{ width: '100%', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                        <div className="input-icon" style={{ background: inputDataset ? '#2563eb' : '', color: inputDataset ? 'white' : '' }}>
+                            {activeTool.includes('raster') ? <Grid3X3 size={20} /> : <BoxSelect size={20} />}
+                        </div>
+                        <div style={{ flex: 1, padding: '0 16px', fontSize: '0.95rem', fontWeight: 700, color: inputDataset ? '#0f172a' : '#cbd5e1', textAlign: 'left' }}>
+                            {inputDataset || (activeTool.includes('raster') ? 'Choose imaging data...' : 'Select geometry layer...')}
+                        </div>
+                        <ChevronRight size={18} color="#cbd5e1" />
+                    </button>
+                </div>
+
+                {/* 3. Specialized Fields per Tool */}
+                {activeTool === 'Buffer' && (
+                    <div className="tool-special-fields animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div className="form-group">
+                            <label><Ruler size={16} color="#3b82f6" /> Distance (m)</label>
+                            <div className="input-wrapper">
+                                <div className="input-icon"><Settings size={20} /></div>
+                                <input type="number" className="form-input" value={distance} onChange={(e) => setDistance(e.target.value)} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div className="form-group">
+                                <label><Target size={14} color="#3b82f6" /> Resolution (m)</label>
+                                <div className="input-wrapper" style={{ padding: '4px' }}>
+                                    <input type="text" className="form-input" placeholder="Value..." value={resolution} onChange={(e) => setResolution(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label><MousePointer2 size={14} color="#3b82f6" /> Quadsegs</label>
+                                <div className="input-wrapper" style={{ padding: '4px' }}>
+                                    <input type="text" className="form-input" placeholder="Segments..." value={quadsegs} onChange={(e) => setQuadsegs(e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label><Palette size={16} color="#3b82f6" /> Caps & Join Style</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div className="input-wrapper" style={{ padding: '8px 12px', borderRadius: '16px' }}>
+                                    <select className="form-input" value={capsStyle} onChange={(e) => setCapsStyle(e.target.value)} style={{ padding: 0 }}>
+                                        <option value="round">Round Cap</option>
+                                        <option value="flat">Flat Cap</option>
+                                        <option value="square">Square Cap</option>
+                                    </select>
+                                </div>
+                                <div className="input-wrapper" style={{ padding: '8px 12px', borderRadius: '16px' }}>
+                                    <select className="form-input" value={joinStyle} onChange={(e) => setJoinStyle(e.target.value)} style={{ padding: 0 }}>
+                                        <option value="round">Round Join</option>
+                                        <option value="mitre">Mitre Join</option>
+                                        <option value="bevel">Bevel Join</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label><Activity size={16} color="#3b82f6" /> Mitre limit</label>
+                            <div className="input-wrapper">
+                                <div className="input-icon"><Settings size={20} /></div>
+                                <input type="number" className="form-input" value={mitreLimit} onChange={(e) => setMitreLimit(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTool.includes('Clip') && (
+                    <div className="form-group animate-fade-in">
+                        <label><BoxSelect size={16} color="#3b82f6" /> Select mask layer</label>
+                        <button className={`input-wrapper ${maskDataset ? 'selected' : ''}`} style={{ width: '100%', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                            <div className="input-icon" style={{ background: maskDataset ? '#2563eb' : '', color: maskDataset ? 'white' : '' }}><Maximize size={20} /></div>
+                            <div style={{ flex: 1, padding: '0 16px', fontSize: '0.95rem', fontWeight: 700, color: maskDataset ? '#0f172a' : '#cbd5e1', textAlign: 'left' }}>
+                                {maskDataset || 'Select clipping boundary...'}
+                            </div>
+                            <ChevronRight size={18} color="#cbd5e1" />
+                        </button>
+                    </div>
+                )}
+
+                {activeTool === 'Simplify' && (
+                    <div className="form-group animate-fade-in">
+                        <label><Target size={16} color="#3b82f6" /> Tolerance (m)</label>
+                        <div className="input-wrapper">
+                            <div className="input-icon"><Gauge size={20} /></div>
+                            <input type="number" className="form-input" value={tolerance} onChange={(e) => setTolerance(e.target.value)} />
+                        </div>
+                    </div>
+                )}
+
+                {activeTool === 'Image resampling' && (
+                    <div className="form-group animate-fade-in">
+                        <label><Gauge size={16} color="#3b82f6" /> Resampling Level</label>
+                        <div className="input-wrapper">
+                            <div className="input-icon"><FileDigit size={20} /></div>
+                            <input type="number" className="form-input" value={level} min="1" onChange={(e) => setLevel(e.target.value)} />
+                        </div>
+                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '8px' }}>Level must be an integer greater than 0</p>
+                    </div>
+                )}
+
+                <button
+                    className={`btn-run-engine ${outputName ? 'animate-pulse-subtle' : ''}`}
+                    style={{ marginTop: '20px' }}
+                    disabled={!outputName}
+                >
+                    <Sparkles size={20} /> Execute Process Engine
+                </button>
             </div>
         </div>
     );
